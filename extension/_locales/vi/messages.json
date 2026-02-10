@@ -1,0 +1,56 @@
+{
+    "extensionName": {
+        "message": "Meeting Insight - Scriberr AI"
+    },
+    "extensionDescription": {
+        "message": "Ghi âm cuộc họp chuyên nghiệp theo thời gian thực (Phiên bản 2026 - Ghi tab)."
+    },
+    "placeholderText": {
+        "message": "Chọn nguồn và bắt đầu phiên âm..."
+    },
+    "headerTitle": {
+        "message": "Meeting Insight"
+    },
+    "sectionAudioSource": {
+        "message": "1. Chọn Nguồn Âm Thanh"
+    },
+    "sourceTab": {
+        "message": "Tab Trình Duyệt"
+    },
+    "sourceTabTitle": {
+        "message": "Dành cho Google Meet, Microsoft Teams Web, YouTube"
+    },
+    "sourceApp": {
+        "message": "Ứng Dụng"
+    },
+    "sourceAppTitle": {
+        "message": "Dành cho Zoom App, Teams Desktop, Skype"
+    },
+    "sourceEverything": {
+        "message": "Toàn Bộ H.Thống"
+    },
+    "sourceEverythingTitle": {
+        "message": "Ghi lại mọi âm thanh từ hệ thống"
+    },
+    "sectionMeetingDetails": {
+        "message": "1. Chi Tiết Cuộc Họp"
+    },
+    "meetingNamePlaceholder": {
+        "message": "Nhập tên cuộc họp (ví dụ: Họp Tuần)"
+    },
+    "sectionLiveStream": {
+        "message": "Trực Tiếp"
+    },
+    "btnConnect": {
+        "message": "Kết Nối Nguồn Âm Thanh"
+    },
+    "btnStopSave": {
+        "message": "Dừng & Lưu vào Dashboard"
+    },
+    "importantHint": {
+        "message": "⚠️ QUAN TRỌNG: Nhớ tích chọn \"Share audio\" ở màn hình tiếp theo."
+    },
+    "alertOpenTab": {
+        "message": "Hãy mở tab YouTube hoặc Meeting trước!"
+    }
+}

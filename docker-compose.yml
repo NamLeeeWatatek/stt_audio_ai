@@ -1,0 +1,23 @@
+services:
+  scriberr:
+    build: .
+    image: scriberr-local:latest
+    ports:
+      - "8081:8080"
+    volumes:
+      - scriberr_data:/app/data
+      # - env_data:/app/whisperx-env # Commented out to use pre-installed image env
+    environment:
+      - PGID=${PGID:-1000}
+      - APP_ENV=production
+      - LOW_MEMORY_MODE=true
+      - ENABLED_MODELS=groq_whisper,fpt_ai,openai_whisper
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      # - PYTORCH_CUDA_VERSION=cpu
+      # CORS: comma-separated list of allowed origins for production
+      # - ALLOWED_ORIGINS=https://your-domain.com
+    restart: unless-stopped
+
+volumes:
+  scriberr_data: {}
+  # env_data: {} # Commented out to use pre-installed image env

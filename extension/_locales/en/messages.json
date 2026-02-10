@@ -1,0 +1,56 @@
+{
+    "extensionName": {
+        "message": "Meeting Insight - Scriberr AI"
+    },
+    "extensionDescription": {
+        "message": "Professional real-time meeting transcription (2026 Tab-Capturing Edition)."
+    },
+    "placeholderText": {
+        "message": "Choose a source and start transcribing..."
+    },
+    "headerTitle": {
+        "message": "Meeting Insight"
+    },
+    "sectionAudioSource": {
+        "message": "1. Audio Source Target"
+    },
+    "sourceTab": {
+        "message": "Web Tab"
+    },
+    "sourceTabTitle": {
+        "message": "For Google Meet, Microsoft Teams Web, YouTube"
+    },
+    "sourceApp": {
+        "message": "Application"
+    },
+    "sourceAppTitle": {
+        "message": "For Zoom App, Desktop Teams, Skype"
+    },
+    "sourceEverything": {
+        "message": "Everything"
+    },
+    "sourceEverythingTitle": {
+        "message": "Capture everything from system"
+    },
+    "sectionMeetingDetails": {
+        "message": "1. Meeting Details"
+    },
+    "meetingNamePlaceholder": {
+        "message": "Enter meeting name (e.g. Weekly Sync)"
+    },
+    "sectionLiveStream": {
+        "message": "Live Stream"
+    },
+    "btnConnect": {
+        "message": "Connect Audio Source"
+    },
+    "btnStopSave": {
+        "message": "Stop & Save to Dashboard"
+    },
+    "importantHint": {
+        "message": "⚠️ IMPORTANT: Remember to check \"Share audio\" in the next screen."
+    },
+    "alertOpenTab": {
+        "message": "Please open a YouTube tab or Meeting first!"
+    }
+}

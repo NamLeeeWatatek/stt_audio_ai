@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Offscreen Debug Console</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #4F6EF7;
+            font-size: 18px;
+            margin: 0 0 15px 0;
+        }
+
+        #log {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+
+        .log-info {
+            color: #4FC1FF;
+        }
+
+        .log-success {
+            color: #4EC9B0;
+        }
+
+        .log-warning {
+            color: #DCDCAA;
+        }
+
+        .log-error {
+            color: #F48771;
+            background: rgba(244, 135, 113, 0.1);
+        }
+
+        .timestamp {
+            color: #858585;
+            font-size: 10px;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Offscreen Debug Console</h1>
+    <div id="log"></div>
+
+    <!-- Debug console disabled to avoid interference -->
+    <!-- <script src="offscreen-debug.js"></script> -->
+    <script src="offscreen.js"></script>
+</body>
+
+</html>

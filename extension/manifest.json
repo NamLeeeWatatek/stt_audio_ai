@@ -1,0 +1,63 @@
+{
+    "manifest_version": 3,
+    "name": "Meeting Insight - Scriberr AI",
+    "version": "1.4",
+    "description": "Professional real-time meeting transcription with WebRTC support (2026 Edition).",
+    "default_locale": "en",
+    "permissions": [
+        "tabCapture",
+        "activeTab",
+        "storage",
+        "offscreen",
+        "tabs",
+        "notifications",
+        "system.display"
+    ],
+    "host_permissions": [
+        "http://localhost:8080/*",
+        "http://localhost:8081/*",
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://*.teams.microsoft.com/*",
+        "https://*.webex.com/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://meet.google.com/*",
+                "https://*.zoom.us/*",
+                "https://*.teams.microsoft.com/*",
+                "https://*.webex.com/*"
+            ],
+            "js": ["content.js"],
+            "run_at": "document_start",
+            "all_frames": false
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["webrtc-injector.js"],
+            "matches": [
+                "https://meet.google.com/*",
+                "https://*.zoom.us/*",
+                "https://*.teams.microsoft.com/*",
+                "https://*.webex.com/*"
+            ]
+        }
+    ],
+    "action": {
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}
