@@ -1,4 +1,9 @@
-.PHONY: help docs docs-serve docs-clean website website-dev website-build dev
+.PHONY: help docs docs-serve docs-clean website website-dev website-build dev sync-ext
+
+sync-ext: ## Sync environment variables with Chrome Extension config
+	@echo "🔄 Syncing .env to extension config..."
+	@python scripts/sync_env.py
+
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'

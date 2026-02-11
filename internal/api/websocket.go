@@ -36,12 +36,31 @@ type StreamConfig struct {
 
 // TranscriptionStreamHandler handles real-time audio streaming
 func (h *Handler) TranscriptionStreamHandler(c *gin.Context) {
+	// 1. Authenticate via token in query params (since headers are tricky with WebSockets in JS)
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication token required"})
+		return
+	}
+
+	claims, err := h.authService.ValidateToken(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authentication token"})
+		return
+	}
+
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.Error("Failed to upgrade websocket", "error", err)
 		return
 	}
 	defer ws.Close()
+
+	userID := claims.UserID
+	logger.Info("Authenticated user connected via WebSocket", "user_id", userID)
+
+	// Create a heap-allocated copy of userID for the pointer
+	uidCopy := userID
 
 	sessionID := fmt.Sprintf("stream_%d", time.Now().UnixNano())
 	var config StreamConfig
@@ -76,10 +95,14 @@ func (h *Handler) TranscriptionStreamHandler(c *gin.Context) {
 				logger.Info("Stream configured", "session_id", sessionID)
 
 				// Create job in DB so Finalize won't fail
-				// We assume AudioPath will be constructed based on sessionID
-				uploadDir := h.config.UploadDir
+				// We match the directory structure used by QuickTranscriptionService
+				liveDir := filepath.Join(h.config.UploadDir, "live_sessions", sessionID)
+				if err := os.MkdirAll(liveDir, 0755); err != nil {
+					logger.Error("Failed to create live session directory", "error", err)
+				}
+				
 				filename := fmt.Sprintf("%s.webm", sessionID)
-				filePath := filepath.Join(uploadDir, filename)
+				filePath := filepath.Join(liveDir, filename)
 
 				// Create audio file
 				f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -92,6 +115,7 @@ func (h *Handler) TranscriptionStreamHandler(c *gin.Context) {
 				// Create or update job record
 				job := models.TranscriptionJob{
 					ID:        sessionID,
+					UserID:    &uidCopy,
 					AudioPath: filePath,
 					Status:    models.StatusProcessing, // Mark as processing since it's live
 					CreatedAt: time.Now(),
@@ -106,7 +130,9 @@ func (h *Handler) TranscriptionStreamHandler(c *gin.Context) {
 
 				// Check if exists
 				if existing, err := h.jobRepo.FindByID(c.Request.Context(), sessionID); err == nil && existing != nil {
-					logger.Info("Job already exists", "job_id", sessionID)
+					logger.Info("Job already exists, updating UserID", "job_id", sessionID)
+					existing.UserID = &uidCopy
+					_ = h.jobRepo.Update(c.Request.Context(), existing)
 				} else {
 					if err := h.jobRepo.Create(c.Request.Context(), &job); err != nil {
 						logger.Error("Failed to create job", "error", err)

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <div class="app-logo">
+          <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#4F6EF7" />
+            <path d="M12 20C12 15.5817 15.5817 12 20 12C24.4183 12 28 15.5817 28 20V28H20C15.5817 28 12 24.4183 12 20Z"
+              fill="white" />
+          </svg>
+        </div>
+        <span class="workspace-name">Meeting Insight</span>
+      </div>
+
+      <div class="header-right">
+        <!-- TIMER (Hidden by default) -->
+        <div id="recording-timer" class="recording-timer" style="display: none;">00:00</div>
+
+        <!-- USER PILL -->
+        <div class="user-pill" id="user-pill" style="display: flex;"> <!-- Default show but inner text ... -->
+          <span id="user-name" class="user-name-small">...</span>
+          <img src="https://ui-avatars.com/api/?name=User&background=4F6EF7&color=fff" id="user-avatar"
+            class="avatar-circle">
+        </div>
+
+        <button class="icon-btn" id="logout-btn" title="Logout"
+          style="display: none; position: absolute; top: 50px; right: 20px; background: #1e2130; border: 1px solid #333; z-index: 1000;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-body-area">
+      <!-- 0. LOGIN OVERLAY -->
+      <div id="login-overlay" class="login-overlay" style="display: none;">
+        <div class="login-content">
+          <div class="login-icon">🔐</div>
+          <h2>Authentication</h2>
+          <p>Please log in to your account to start capturing meetings.</p>
+          <button id="login-link-btn" class="primary-btn">Log In</button>
+        </div>
+      </div>
+
+      <!-- MAIN APP CONTENT -->
+      <div id="app-main-content">
+        <div class="section">
+          <div class="section-headers">
+            <div class="section-label">Meeting Name</div>
+          </div>
+          <input type="text" class="main-input" placeholder="e.g. Project Sync" id="capture-name">
+        </div>
+
+        <div class="transcript-box">
+          <div class="box-header">
+            <span>Live Transcript</span>
+            <div class="visualizer-bars" id="visualizer"></div>
+          </div>
+          <div id="transcript-content" class="content">
+            <p style="color: var(--text-dim);">Ready to capture audio...</p>
+          </div>
+        </div>
+
+        <div class="actions-area">
+          <button id="record-btn" class="primary-btn">
+            <span id="btn-text">Connect Audio Source</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+
+</html>

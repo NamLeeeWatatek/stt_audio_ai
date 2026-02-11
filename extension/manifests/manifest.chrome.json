@@ -6,7 +6,6 @@
     "default_locale": "en",
     "permissions": [
         "tabCapture",
-        "desktopCapture",
         "activeTab",
         "storage",
         "offscreen",
@@ -17,8 +16,6 @@
     "host_permissions": [
         "http://localhost:8080/*",
         "http://localhost:8081/*",
-        "http://127.0.0.1:8080/*",
-        "http://127.0.0.1:8081/*",
         "https://meet.google.com/*",
         "https://*.zoom.us/*",
         "https://*.teams.microsoft.com/*",
@@ -33,23 +30,10 @@
                 "https://*.webex.com/*"
             ],
             "js": [
-                "content/loader.js"
+                "content/index.js"
             ],
             "run_at": "document_start",
             "all_frames": false
-        },
-        {
-            "matches": [
-                "http://localhost:8080/*",
-                "http://localhost:8081/*",
-                "http://127.0.0.1:8080/*",
-                "http://127.0.0.1:8081/*",
-                "https://*.scriberr.ai/*"
-            ],
-            "js": [
-                "content/auth-sync.js"
-            ],
-            "run_at": "document_idle"
         }
     ],
     "web_accessible_resources": [
@@ -57,10 +41,8 @@
             "resources": [
                 "content/injector.js",
                 "content/index.js",
-                "content/ui.js",
                 "shared/message.types.js",
                 "platforms/chrome/browser.adapter.js",
-                "content/loader.js",
                 "platforms/chrome/storage.adapter.js"
             ],
             "matches": [

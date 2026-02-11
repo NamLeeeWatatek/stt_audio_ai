@@ -33,6 +33,7 @@ type TranscriptionJob struct {
 	Parameters WhisperXParams `json:"parameters" gorm:"embedded"`
 
 	// Relationships
+	UserID          *uint            `json:"user_id,omitempty" gorm:"index"`
 	MultiTrackFiles []MultiTrackFile `json:"multi_track_files,omitempty" gorm:"foreignKey:TranscriptionJobID"`
 }
 
@@ -147,6 +148,8 @@ type User struct {
 	ID                       uint      `json:"id" gorm:"primaryKey"`
 	Username                 string    `json:"username" gorm:"uniqueIndex;not null;type:varchar(50)"`
 	Password                 string    `json:"-" gorm:"not null;type:varchar(255)"`
+	FullName                 string    `json:"full_name" gorm:"type:varchar(100)"`
+	AvatarURL                string    `json:"avatar_url" gorm:"type:text"`
 	DefaultProfileID         *string   `json:"default_profile_id,omitempty" gorm:"type:varchar(36)"`
 	AutoTranscriptionEnabled bool      `json:"auto_transcription_enabled" gorm:"not null;default:false"`
 	CreatedAt                time.Time `json:"created_at" gorm:"autoCreateTime"`

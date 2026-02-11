@@ -34,27 +34,30 @@ func SetupRoutes(handler *Handler, authService *auth.AuthService) *gin.Engine {
 		origin := c.Request.Header.Get("Origin")
 
 		// Determine allowed origin based on config
-		allowOrigin := "*"
-		if handler.config.IsProduction() && len(handler.config.AllowedOrigins) > 0 {
+		allowOrigin := ""
+		if strings.HasPrefix(origin, "chrome-extension://") {
+			// Always allow chrome extensions
+			allowOrigin = origin
+		} else if handler.config.IsProduction() && len(handler.config.AllowedOrigins) > 0 {
 			// In production, validate against configured origins
-			allowOrigin = ""
 			for _, allowed := range handler.config.AllowedOrigins {
 				if origin == allowed {
 					allowOrigin = origin
 					break
 				}
 			}
-		} else if strings.HasPrefix(origin, "chrome-extension://") {
-			// Always allow chrome extensions
-			allowOrigin = origin
 		} else if origin != "" {
-			// In development, echo back the origin for credentials support
+			// In development or if no specific production origins set, mirror origin for credentials
 			allowOrigin = origin
+		} else {
+			allowOrigin = "*"
 		}
 
 		if allowOrigin != "" {
 			c.Header("Access-Control-Allow-Origin", allowOrigin)
-			c.Header("Access-Control-Allow-Credentials", "true")
+			if allowOrigin != "*" {
+				c.Header("Access-Control-Allow-Credentials", "true")
+			}
 		}
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-API-Key")
@@ -85,6 +88,9 @@ func SetupRoutes(handler *Handler, authService *auth.AuthService) *gin.Engine {
 			auth.POST("/login", handler.Login)
 			auth.POST("/refresh", handler.Refresh)
 			auth.POST("/logout", handler.Logout)
+
+			// Get current user profile info
+			auth.GET("/me", middleware.JWTOnlyMiddleware(authService), handler.GetMe)
 
 			// Account management routes (require authentication)
 			authProtected := auth.Group("")
@@ -159,12 +165,16 @@ func SetupRoutes(handler *Handler, authService *auth.AuthService) *gin.Engine {
 			transcription.POST("/:id/speakers", handler.UpdateSpeakerMappings)
 		}
 
-		// Public Quick transcription endpoints (for extension/public use)
-		v1.POST("/transcription/quick", handler.SubmitQuickTranscription)
-		v1.GET("/transcription/quick/:id", handler.GetQuickTranscriptionStatus)
-		v1.POST("/transcription/quick/:id/finalize", handler.FinalizeQuickTranscription)
+		// Quick transcription endpoints (protected to associate with user)
+		quick := v1.Group("/transcription/quick")
+		quick.Use(middleware.AuthMiddleware(authService))
+		{
+			quick.POST("/", handler.SubmitQuickTranscription)
+			quick.GET("/:id", handler.GetQuickTranscriptionStatus)
+			quick.POST("/:id/finalize", handler.FinalizeQuickTranscription)
+		}
 		
-		// WebSocket endpoint for real-time transcription
+		// WebSocket endpoint for real-time transcription (auth handled internally)
 		v1.GET("/ws/transcription", handler.TranscriptionStreamHandler)
 
 		// Profile routes (require authentication)

@@ -25,6 +25,7 @@ import (
 // QuickTranscriptionJob represents a temporary transcription job
 type QuickTranscriptionJob struct {
 	ID           string                `json:"id"`
+	UserID       *uint                 `json:"user_id,omitempty"`
 	Title        string                `json:"title"`
 	Status       models.JobStatus      `json:"status"`
 	AudioPath    string                `json:"audio_path"`
@@ -71,7 +72,7 @@ func NewQuickTranscriptionService(cfg *config.Config, unifiedProcessor *UnifiedJ
 }
 
 // SubmitQuickJob creates and processes a temporary transcription job
-func (qs *QuickTranscriptionService) SubmitQuickJob(audioData io.Reader, filename string, params models.WhisperXParams, title string, sessionID string, saveToPortal bool, synchronous bool) (*QuickTranscriptionJob, error) {
+func (qs *QuickTranscriptionService) SubmitQuickJob(audioData io.Reader, filename string, params models.WhisperXParams, title string, sessionID string, saveToPortal bool, synchronous bool, userID *uint) (*QuickTranscriptionJob, error) {
 	// Generate unique job ID
 	jobID := uuid.New().String()
 
@@ -127,6 +128,7 @@ func (qs *QuickTranscriptionService) SubmitQuickJob(audioData io.Reader, filenam
 
 	job := &QuickTranscriptionJob{
 		ID:         actualJobID, // For internal tracking, we use actualJobID
+		UserID:     userID,
 		Title:      jobName,
 		Status:     models.StatusPending,
 		AudioPath:  audioPath,
@@ -210,6 +212,7 @@ func (qs *QuickTranscriptionService) processQuickJob(chunkID string, sessionID s
 		// Create new master job or standalone job
 		masterJob = &models.TranscriptionJob{
 			ID:         sessionID,
+			UserID:     job.UserID,
 			Title:      titlePtr,
 			AudioPath:  job.AudioPath,
 			Parameters: job.Parameters,
@@ -428,6 +431,7 @@ func (qs *QuickTranscriptionService) FinalizeJob(ctx context.Context, sessionID 
 	if err != nil {
 		return fmt.Errorf("failed to read live session directory: %v", err)
 	}
+	fmt.Printf(">>> FINALIZE: Found %d files in %s\n", len(files), liveDir)
 
 	var audioFiles []string
 	for _, f := range files {
@@ -462,10 +466,13 @@ func (qs *QuickTranscriptionService) FinalizeJob(ctx context.Context, sessionID 
 
 	// Merge audio using ffmpeg (re-encode to MP3 because input is likely WebM/Opus)
 	outputPath := filepath.Join(liveDir, "merged_audio.mp3")
+	fmt.Printf(">>> FINALIZE: Running ffmpeg concat into %s\n", outputPath)
 	cmd := exec.Command("ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listPath, "-acodec", "libmp3lame", "-q:a", "2", outputPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf(">>> FINALIZE: FFmpeg failed: %v\n", err)
 		return fmt.Errorf("ffmpeg concat failed: %v, output: %s", err, string(output))
 	}
+	fmt.Printf(">>> FINALIZE: FFmpeg success!\n")
 
 	// Update the master job's audio path in the database
 	if err := qs.jobRepo.UpdateAudioPath(ctx, sessionID, outputPath); err != nil {

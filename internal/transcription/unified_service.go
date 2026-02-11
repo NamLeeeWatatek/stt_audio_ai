@@ -357,18 +357,20 @@ func (u *UnifiedTranscriptionService) processSingleTrackJob(ctx context.Context,
 			logger.Info("Running separate diarization", "model_id", diarizationModelID)
 			diarizationAdapter, err := u.registry.GetDiarizationAdapter(diarizationModelID)
 			if err != nil {
-				return fmt.Errorf("failed to get diarization adapter: %w", err)
-			}
+				logger.Warn("Diarization adapter not found, skipping diarization step", "error", err)
+			} else if !diarizationAdapter.IsReady(ctx) {
+				logger.Warn("Diarization adapter is not ready (missing dependencies), skipping diarization step", "model_id", diarizationModelID)
+			} else {
+				// Use the same preprocessed audio for diarization
+				diarizationResult, err = diarizationAdapter.Diarize(ctx, preprocessedInput, diarizationParams, procCtx)
+				if err != nil {
+					logger.Warn("Diarization failed, proceeding with transcription only", "error", err)
+				}
 
-			// Use the same preprocessed audio for diarization
-			diarizationResult, err = diarizationAdapter.Diarize(ctx, preprocessedInput, diarizationParams, procCtx)
-			if err != nil {
-				return fmt.Errorf("diarization failed: %w", err)
-			}
-
-			// Merge diarization results with transcription
-			if transcriptResult != nil && diarizationResult != nil {
-				transcriptResult = u.mergeDiarizationWithTranscription(transcriptResult, diarizationResult)
+				// Merge diarization results with transcription
+				if transcriptResult != nil && diarizationResult != nil {
+					transcriptResult = u.mergeDiarizationWithTranscription(transcriptResult, diarizationResult)
+				}
 			}
 		}
 	}

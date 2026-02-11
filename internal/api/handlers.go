@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context" 
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -116,8 +117,10 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Token string `json:"token"`
 	User  struct {
-		ID       uint   `json:"id"`
-		Username string `json:"username"`
+		ID        uint   `json:"id"`
+		Username  string `json:"username"`
+		FullName  string `json:"full_name"`
+		AvatarURL string `json:"avatar_url"`
 	} `json:"user"`
 }
 
@@ -848,8 +851,8 @@ func (h *Handler) GetTranscript(c *gin.Context) {
 		return
 	}
 
-	// Return empty transcript gracefully for non-completed jobs
-	if job.Status != models.StatusCompleted {
+	// If job is not completed, check if we have a partial transcript to show
+	if job.Status != models.StatusCompleted && job.Status != models.StatusProcessing {
 		c.JSON(http.StatusOK, gin.H{
 			"job_id":     job.ID,
 			"title":      job.Title,
@@ -1464,16 +1467,18 @@ func (h *Handler) GetAudioFile(c *gin.Context) {
 		c.Header("Content-Type", "audio/mp4")
 	case ".ogg":
 		c.Header("Content-Type", "audio/ogg")
+	case ".webm":
+		c.Header("Content-Type", "audio/webm")
 	default:
 		c.Header("Content-Type", "audio/mpeg")
 	}
 
 	// Add CORS headers for audio visualization and streaming
 	origin := c.Request.Header.Get("Origin")
-	allowOrigin := "*"
-	if h.config.IsProduction() && len(h.config.AllowedOrigins) > 0 {
-		// In production, validate against configured origins
-		allowOrigin = ""
+	allowOrigin := ""
+	if strings.HasPrefix(origin, "chrome-extension://") {
+		allowOrigin = origin
+	} else if h.config.IsProduction() && len(h.config.AllowedOrigins) > 0 {
 		for _, allowed := range h.config.AllowedOrigins {
 			if origin == allowed {
 				allowOrigin = origin
@@ -1481,13 +1486,16 @@ func (h *Handler) GetAudioFile(c *gin.Context) {
 			}
 		}
 	} else if origin != "" {
-		// In development, echo back the origin for credentials support
 		allowOrigin = origin
+	} else {
+		allowOrigin = "*"
 	}
 
 	if allowOrigin != "" {
 		c.Header("Access-Control-Allow-Origin", allowOrigin)
-		c.Header("Access-Control-Allow-Credentials", "true")
+		if allowOrigin != "*" {
+			c.Header("Access-Control-Allow-Credentials", "true")
+		}
 	}
 	c.Header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length")
 	c.Header("Accept-Ranges", "bytes")
@@ -1571,6 +1579,8 @@ func (h *Handler) Login(c *gin.Context) {
 	response := LoginResponse{Token: token}
 	response.User.ID = user.ID
 	response.User.Username = user.Username
+	response.User.FullName = user.FullName
+	response.User.AvatarURL = user.AvatarURL
 
 	logger.AuthEvent("login", req.Username, c.ClientIP(), true)
 	c.JSON(http.StatusOK, response)
@@ -1611,6 +1621,38 @@ func (h *Handler) Logout(c *gin.Context) {
 		Secure:   h.config.SecureCookies,
 	})
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+// @Summary Get current user info
+// @Description Get current user info for the authenticated user
+// @Tags auth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/auth/me [get]
+func (h *Handler) GetMe(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.userRepo.FindByID(c.Request.Context(), userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":         user.ID,
+			"username":   user.Username,
+			"full_name":  user.FullName,
+			"avatar_url": user.AvatarURL,
+		},
+	})
 }
 
 // @Summary Check registration status
@@ -2490,9 +2532,17 @@ func (h *Handler) SubmitQuickTranscription(c *gin.Context) {
 	// }
 
 	title := c.PostForm("title")
-
+	
+	// Get optional userID for job ownership
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = new(uint)
+		*userID = id
+	}
+	
 	// Submit quick transcription job
-	job, err := h.quickTranscription.SubmitQuickJob(file, header.Filename, params, title, sessionID, saveToPortal, true)
+	job, err := h.quickTranscription.SubmitQuickJob(file, header.Filename, params, title, sessionID, saveToPortal, true, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to submit quick transcription: %v", err)})
 		return
@@ -2531,40 +2581,39 @@ func (h *Handler) GetQuickTranscriptionStatus(c *gin.Context) {
 // FinalizeQuickTranscription marks a live session as completed
 func (h *Handler) FinalizeQuickTranscription(c *gin.Context) {
 	jobID := c.Param("id")
+	fmt.Printf(">>> API: Received finalize request for job %s\n", jobID)
 	
-	// Finalize transcription segments and merge audio
-	if err := h.quickTranscription.FinalizeJob(c.Request.Context(), jobID); err != nil {
-		fmt.Printf("WARNING: Failed to merge audio for job %s: %v\n", jobID, err)
-		// If merge fails, we can't do full re-processing, so just mark completed
-		_ = h.jobRepo.UpdateStatus(c.Request.Context(), jobID, models.StatusCompleted)
-		c.JSON(http.StatusOK, gin.H{"message": "Job finalized (merge failed)"})
-		return
-	}
+	// Use a background context for the actual work so it doesn't get cancelled if the user closes the popup
+	bgCtx := context.Background()
 
-	// TRIGGER FULL RE-PROCESSING WITH DIARIZATION
-	// Now that we have the full merged audio, we re-submit it to the queue
-	// with Diarization enabled. This replaces the "chunked" text with high-quality
-	// speaker-separated text for AI Notes.
-	ctx := c.Request.Context()
-	job, err := h.jobRepo.FindByID(ctx, jobID)
-	if err == nil {
-		job.Status = models.StatusPending
-		job.Diarization = true // FORCE ENABLE DIARIZATION for final processing
-		// Ensure parameters also reflect this
-		job.Parameters.Diarize = true
-		
-		if err := h.jobRepo.Update(ctx, job); err == nil {
-			if err := h.taskQueue.EnqueueJob(jobID); err == nil {
-				fmt.Printf(">>> SUCCESS: Enqueued job %s for full post-meeting diarization\n", jobID)
-				c.JSON(http.StatusOK, gin.H{"message": "Job finalized and queued for full processing"})
-				return
+	go func() {
+		// Finalize transcription segments and merge audio
+		if err := h.quickTranscription.FinalizeJob(bgCtx, jobID); err != nil {
+			fmt.Printf("WARNING: Failed to merge audio for job %s: %v\n", jobID, err)
+			_ = h.jobRepo.UpdateStatus(bgCtx, jobID, models.StatusCompleted)
+			return
+		}
+
+		// TRIGGER FULL RE-PROCESSING WITH DIARIZATION
+		job, err := h.jobRepo.FindByID(bgCtx, jobID)
+		if err == nil {
+			job.Status = models.StatusPending
+			job.Diarization = true 
+			job.Parameters.Diarize = true
+			
+			if err := h.jobRepo.Update(bgCtx, job); err == nil {
+				if err := h.taskQueue.EnqueueJob(jobID); err == nil {
+					fmt.Printf(">>> SUCCESS: Enqueued job %s for full post-meeting diarization\n", jobID)
+					return
+				}
 			}
 		}
-	}
 
-	// Fallback if enqueue failed
-	_ = h.jobRepo.UpdateStatus(ctx, jobID, models.StatusCompleted)
-	c.JSON(http.StatusOK, gin.H{"message": "Job finalized successfully"})
+		// Fallback if enqueue failed
+		_ = h.jobRepo.UpdateStatus(bgCtx, jobID, models.StatusCompleted)
+	}()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Finalization started"})
 }
 
 // @Summary Download audio from YouTube URL
