@@ -31,7 +31,7 @@ interface HeaderProps {
 
 export function Header({ onFileSelect, onMultiTrackClick, onDownloadComplete }: HeaderProps) {
 	const navigate = useNavigate();
-	const { logout } = useAuth();
+	const { logout, isAdmin } = useAuth();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const videoFileInputRef = useRef<HTMLInputElement>(null);
 	const [isRecorderOpen, setIsRecorderOpen] = useState(false);
@@ -77,6 +77,10 @@ export function Header({ onFileSelect, onMultiTrackClick, onDownloadComplete }: 
 
 	const handleSettingsClick = () => {
 		navigate("/settings");
+	};
+
+	const handleAdminUsersClick = () => {
+		navigate("/admin/users");
 	};
 
 	const handleLogout = () => {
@@ -281,6 +285,12 @@ export function Header({ onFileSelect, onMultiTrackClick, onDownloadComplete }: 
 								<Settings className="h-4 w-4 mr-2" />
 								Settings
 							</DropdownMenuItem>
+							{isAdmin && (
+								<DropdownMenuItem onClick={handleAdminUsersClick} className="cursor-pointer rounded-[var(--radius-btn)] focus:bg-[var(--secondary)] py-2.5">
+									<Users className="h-4 w-4 mr-2" />
+									Manage Users
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-[var(--radius-btn)] focus:bg-[var(--error)]/10 text-[var(--error)] py-2.5">
 								<LogOut className="h-4 w-4 mr-2" />
 								Logout

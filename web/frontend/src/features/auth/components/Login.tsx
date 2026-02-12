@@ -9,9 +9,10 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 interface LoginProps {
 	onLogin: (token: string) => void;
+	onSwitchToRegister?: () => void;
 }
 
-export function Login({ onLogin }: LoginProps) {
+export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
 	const navigate = useNavigate();
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -163,6 +164,18 @@ export function Login({ onLogin }: LoginProps) {
 								)}
 							</Button>
 						</form>
+
+						{onSwitchToRegister && (
+							<div className="pt-2 text-center text-sm">
+								<span className="text-[var(--text-secondary)]">Don't have an account? </span>
+								<button
+									onClick={onSwitchToRegister}
+									className="text-[var(--brand-solid)] font-medium hover:underline focus:outline-none"
+								>
+									Create one
+								</button>
+							</div>
+						)}
 					</div>
 
 					{/* Footer Note */}

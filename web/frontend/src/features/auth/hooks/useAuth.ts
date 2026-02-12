@@ -5,9 +5,13 @@ export function useAuth() {
     const {
         token,
         requiresRegistration,
+        registrationAllowed,
+        user,
         isInitialized,
         setToken,
+        setUser,
         setRequiresRegistration,
+        setRegistrationAllowed,
         setInitialized,
         logout: storeLogout
     } = useAuthStore();
@@ -55,10 +59,21 @@ export function useAuth() {
     }, [token, storeLogout]);
 
 
-    const login = useCallback((newToken: string) => {
+    const login = useCallback(async (newToken: string) => {
         setToken(newToken);
         setRequiresRegistration(false);
-    }, [setToken, setRequiresRegistration]);
+        try {
+            const res = await fetch("/api/v1/auth/me", {
+                headers: { "Authorization": `Bearer ${newToken}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data.user);
+            }
+        } catch (err) {
+            console.error("Failed to fetch user after login", err);
+        }
+    }, [setToken, setRequiresRegistration, setUser]);
 
 
     const tryRefresh = useCallback(async (): Promise<string | null> => {
@@ -137,10 +152,27 @@ export function useAuth() {
                 const response = await fetch("/api/v1/auth/registration-status");
                 if (response.ok) {
                     const data = await response.json();
-                    const regEnabled = typeof data.registration_enabled === 'boolean' ? data.registration_enabled : !!data.requiresRegistration;
-                    setRequiresRegistration(regEnabled);
+                    const regRequired = data.registration_required;
+                    const regAllowed = data.registration_allowed;
 
-                    if (!regEnabled) {
+                    setRequiresRegistration(regRequired);
+                    setRegistrationAllowed(regAllowed);
+
+                    if (!regRequired) {
+                        // If token exists, always fetch/refresh user info to ensure role sync
+                        if (token) {
+                            const resMe = await fetch("/api/v1/auth/me", {
+                                headers: { "Authorization": `Bearer ${token}` }
+                            });
+                            if (resMe.ok) {
+                                const dataMe = await resMe.json();
+                                setUser(dataMe.user);
+                            } else if (resMe.status === 401) {
+                                const refreshedToken = await tryRefresh();
+                                if (!refreshedToken) logout();
+                            }
+                        }
+
                         // Check token validity if present
                         if (token && isTokenExpired(token)) {
                             // Try refresh or logout
@@ -162,6 +194,9 @@ export function useAuth() {
         token,
         isAuthenticated,
         requiresRegistration,
+        registrationAllowed,
+        user,
+        isAdmin: user?.role === 'admin',
         isInitialized,
         login,
         logout,

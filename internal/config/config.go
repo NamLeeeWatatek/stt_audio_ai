@@ -43,6 +43,9 @@ type Config struct {
 
 	// Hugging Face configuration
 	HFToken string
+
+	// Registration control
+	AllowRegistration bool
 }
 
 // Load loads configuration from environment variables and .env file
@@ -73,6 +76,7 @@ func Load() *Config {
 		OpenAIAPIKey:   getEnv("OPENAI_API_KEY", ""),
 		GroqAPIKey:     getEnv("GROQ_API_KEY", ""),
 		HFToken:        getEnv("HF_TOKEN", ""),
+		AllowRegistration: getEnv("ALLOW_REGISTRATION", "false") == "true",
 	}
 }
 

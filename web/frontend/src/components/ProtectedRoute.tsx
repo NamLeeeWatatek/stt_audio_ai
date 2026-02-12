@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Login } from "@/features/auth/components/Login";
 import { Register } from "@/features/auth/components/Register";
@@ -8,7 +8,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-	const { isAuthenticated, requiresRegistration, isInitialized, login } = useAuth();
+	const { isAuthenticated, requiresRegistration, registrationAllowed, isInitialized, login } = useAuth();
+	const [mode, setMode] = useState<"login" | "register">("login");
 
 	// Show loading while initializing
 	if (!isInitialized) {
@@ -27,9 +28,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 		return <Register onRegister={login} />;
 	}
 
-	// Show login form if not authenticated
+	// Show login or register form if not authenticated
 	if (!isAuthenticated) {
-		return <Login onLogin={login} />;
+		if (mode === "register" && registrationAllowed) {
+			return <Register onRegister={login} onSwitchToLogin={() => setMode("login")} />;
+		}
+		return <Login onLogin={login} onSwitchToRegister={registrationAllowed ? () => setMode("register") : undefined} />;
 	}
 
 	// Show protected content if authenticated

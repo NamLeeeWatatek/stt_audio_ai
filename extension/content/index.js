@@ -1,11 +1,11 @@
 /**
- * SCRIBERR CONTENT SCRIPT - VERSION 3.3 (Robust UI Injection)
+ * WATA CONTENT SCRIPT - VERSION 1.0 (Robust UI Injection)
  */
 
 import { MESSAGE_TYPES } from '../shared/message.types.js';
 import { MeetUI } from './ui.js';
 
-console.log('🚀 [Scriberr] Content script loaded');
+console.log('🚀 [Wata] Content script loaded');
 
 let ui = null;
 
@@ -14,13 +14,13 @@ function setupUI() {
     if (ui) return; // Đã init rồi
 
     if (document.body && document.head) {
-        console.log('🏗️ [Scriberr] Body & Head ready, injecting UI...');
+        console.log('🏗️ [Wata] Body & Head ready, injecting UI...');
         try {
             ui = new MeetUI();
             ui.init();
-            console.log('✅ [Scriberr] UI injected successfully');
+            console.log('✅ [Wata] UI injected successfully');
         } catch (e) {
-            console.error('❌ [Scriberr] UI Injection failed:', e);
+            console.error('❌ [Wata] UI Injection failed:', e);
         }
     } else {
         // Nếu chưa có body, dùng MutationObserver để chờ
@@ -46,9 +46,9 @@ function injectWebRTC() {
         script.src = chrome.runtime.getURL('content/injector.js');
         script.onload = function () { this.remove(); };
         (document.head || document.documentElement).appendChild(script);
-        console.log('🧬 [Scriberr] WebRTC Interceptor injected');
+        console.log('🧬 [Wata] WebRTC Interceptor injected');
     } catch (e) {
-        console.error('❌ [Scriberr] WebRTC Injection failed:', e);
+        console.error('❌ [Wata] WebRTC Injection failed:', e);
     }
 }
 
@@ -59,7 +59,7 @@ let transcriptObserver = null;
 let lastCapturedText = "";
 
 function startCapturingCaptions() {
-    console.warn('📝 [Scriberr] Bắt đầu theo dõi Caption...');
+    console.warn('📝 [Wata] Bắt đầu theo dõi Caption...');
     if (ui) ui.updateRecordingStatus(true);
 
     const selectors = ['.iTTPOb.VbkSUe', '.KTv9Qe', '.a44Uue', '.VfPpkd-Bz112c-LgbsSe'];
@@ -156,7 +156,7 @@ new MutationObserver(() => {
     const url = location.href;
     if (url !== lastUrl) {
         lastUrl = url;
-        console.log('🌐 [Scriberr] URL changed to:', url);
+        console.log('🌐 [Wata] URL changed to:', url);
         // Nếu quay về màn hình home của Meet, coi như kết thúc họp
         if (url === 'https://meet.google.com/' || url.includes('?authuser')) {
             chrome.runtime.sendMessage({ type: MESSAGE_TYPES.STOP_RECORDING }).catch(() => { });

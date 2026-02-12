@@ -44,7 +44,7 @@ export function ScriberrIcon({ className = "" }: { className?: string }) {
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Scriberr Icon"
+      aria-label="Wata Meeting Notes Icon"
     >
       <defs>
         <linearGradient id="dynamicGradient" x1="0%" y1="0%" x2="100%" y2="100%">

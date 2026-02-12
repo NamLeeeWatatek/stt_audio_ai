@@ -12,7 +12,7 @@ let timerInterval = null;
 let recordingStartTime = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 [Scriberr] Popup DOM Loaded');
+    console.log('🚀 [Wata] Popup DOM Loaded');
 
     // Auto refresh auth on focus
     window.addEventListener('focus', refreshAuth);
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     elements.logoutBtn?.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm("Logout from Scriberr?")) {
+        if (confirm("Logout from Wata Meeting Notes?")) {
             await auth.clearAuth();
             updateAuthUI(false);
         }
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (info) {
                         const name = info.full_name || info.username || 'User';
                         if (elements.userAvatar) {
-                            elements.userAvatar.src = info.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4F6EF7&color=fff`;
+                            elements.userAvatar.src = info.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FFAB40&color=fff`;
                         }
                         if (elements.userName) elements.userName.innerText = name;
                     } else {

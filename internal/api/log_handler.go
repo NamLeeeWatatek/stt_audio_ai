@@ -20,6 +20,10 @@ import (
 // @Router /transcription/{id}/logs [get]
 func (h *Handler) GetJobLogs(c *gin.Context) {
 	jobID := c.Param("id")
+	
+	if _, err := h.checkJobOwnership(c, jobID); err != nil {
+		return
+	}
 
 	// Construct path to log file
 	logPath := filepath.Join(h.config.TranscriptsDir, jobID, "transcription.log")

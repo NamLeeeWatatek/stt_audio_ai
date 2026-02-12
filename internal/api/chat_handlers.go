@@ -152,10 +152,9 @@ func (h *Handler) CreateChatSession(c *gin.Context) {
 		return
 	}
 
-	// Verify transcription exists and has completed transcript
-	transcription, err := h.jobRepo.FindByID(c.Request.Context(), req.TranscriptionID)
+	// Verify transcription exists and user has access
+	transcription, err := h.checkJobOwnership(c, req.TranscriptionID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Transcription not found"})
 		return
 	}
 
@@ -225,6 +224,10 @@ func (h *Handler) GetChatSessions(c *gin.Context) {
 	transcriptionID := c.Param("transcription_id")
 	if transcriptionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Transcription ID is required"})
+		return
+	}
+
+	if _, err := h.checkJobOwnership(c, transcriptionID); err != nil {
 		return
 	}
 
@@ -305,6 +308,11 @@ func (h *Handler) GetChatSession(c *gin.Context) {
 		return
 	}
 
+	// Ensure user has access to the transcription this chat belongs to
+	if _, err := h.checkJobOwnership(c, session.TranscriptionID); err != nil {
+		return
+	}
+
 	var messageResponses []ChatMessageResponse
 	for _, msg := range session.Messages {
 		messageResponses = append(messageResponses, ChatMessageResponse{
@@ -382,6 +390,11 @@ func (h *Handler) SendChatMessage(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get chat session"})
+		return
+	}
+
+	// Ensure user has access to the transcription this chat belongs to
+	if _, err := h.checkJobOwnership(c, session.TranscriptionID); err != nil {
 		return
 	}
 
@@ -717,6 +730,11 @@ func (h *Handler) UpdateChatSessionTitle(c *gin.Context) {
 		return
 	}
 
+	// Ensure user has access
+	if _, err := h.checkJobOwnership(c, session.TranscriptionID); err != nil {
+		return
+	}
+
 	session.Title = req.Title
 	if err := h.chatRepo.Update(c.Request.Context(), session); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update title"})
@@ -754,6 +772,22 @@ func (h *Handler) DeleteChatSession(c *gin.Context) {
 	sessionID := c.Param("session_id")
 	if sessionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Session ID is required"})
+		return
+	}
+
+	// Fetch session first to check ownership
+	session, err := h.chatRepo.FindByID(c.Request.Context(), sessionID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Chat session not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get chat session"})
+		return
+	}
+
+	// Ensure user has access
+	if _, err := h.checkJobOwnership(c, session.TranscriptionID); err != nil {
 		return
 	}
 

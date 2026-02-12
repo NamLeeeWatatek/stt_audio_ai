@@ -1,10 +1,10 @@
-console.log('📦 [Scriberr] Loader starting...');
+console.log('📦 [Wata] Loader starting...');
 (async () => {
     try {
         const src = chrome.runtime.getURL('content/index.js');
         await import(src);
-        console.log('✅ [Scriberr] Core content script imported via loader');
+        console.log('✅ [Wata] Core content script imported via loader');
     } catch (e) {
-        console.error('❌ [Scriberr] Loader failed to import content script:', e);
+        console.error('❌ [Wata] Loader failed to import content script:', e);
     }
 })();

@@ -47,14 +47,8 @@ func (h *Handler) ListNotes(c *gin.Context) {
 		return
 	}
 
-	// Ensure transcription exists
-	_, err := h.jobRepo.FindByID(c.Request.Context(), transcriptionID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Transcription not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transcription"})
+	// Ensure transcription exists and user has access
+	if _, err := h.checkJobOwnership(c, transcriptionID); err != nil {
 		return
 	}
 
@@ -107,16 +101,8 @@ func (h *Handler) CreateNote(c *gin.Context) {
 		return
 	}
 
-	// Ensure transcription exists
-	_, err := h.jobRepo.FindByID(c.Request.Context(), transcriptionID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			log.Printf("notes.CreateNote: transcription %s not found", transcriptionID)
-			c.JSON(http.StatusNotFound, gin.H{"error": "Transcription not found"})
-			return
-		}
-		log.Printf("notes.CreateNote: failed to fetch transcription %s: %v", transcriptionID, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transcription"})
+	// Ensure transcription exists and user has access
+	if _, err := h.checkJobOwnership(c, transcriptionID); err != nil {
 		return
 	}
 
@@ -166,6 +152,10 @@ func (h *Handler) GetNote(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch note"})
 		return
 	}
+
+	if _, err := h.checkJobOwnership(c, n.TranscriptionID); err != nil {
+		return
+	}
 	c.JSON(http.StatusOK, n)
 }
 
@@ -201,6 +191,10 @@ func (h *Handler) UpdateNote(c *gin.Context) {
 		return
 	}
 
+	if _, err := h.checkJobOwnership(c, n.TranscriptionID); err != nil {
+		return
+	}
+
 	n.Content = req.Content
 	n.UpdatedAt = time.Now()
 
@@ -224,6 +218,23 @@ func (h *Handler) UpdateNote(c *gin.Context) {
 // @Router /api/v1/notes/{note_id} [delete]
 func (h *Handler) DeleteNote(c *gin.Context) {
 	noteID := c.Param("note_id")
+	
+	// Get note first to check ownership
+	note, err := h.noteRepo.FindByID(c.Request.Context(), noteID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Note not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch note"})
+		return
+	}
+
+	// Ensure user has access to the transcription this note belongs to
+	if _, err := h.checkJobOwnership(c, note.TranscriptionID); err != nil {
+		return
+	}
+
 	if err := h.noteRepo.Delete(c.Request.Context(), noteID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete note"})
 		return

@@ -1,6 +1,6 @@
 {
     "extensionName": {
-        "message": "Meeting Insight - Scriberr AI"
+        "message": "Wata Meeting Notes"
     },
     "extensionDescription": {
         "message": "Professional real-time meeting transcription (2026 Tab-Capturing Edition)."
@@ -9,7 +9,7 @@
         "message": "Choose a source and start transcribing..."
     },
     "headerTitle": {
-        "message": "Meeting Insight"
+        "message": "Wata Meeting Notes"
     },
     "sectionAudioSource": {
         "message": "1. Audio Source Target"

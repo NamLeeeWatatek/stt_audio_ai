@@ -87,7 +87,7 @@ export function CLISettings() {
                             Installation
                         </h2>
                         <p className="text-carbon-600 dark:text-carbon-300 mb-6">
-                            Run this command in your terminal to install the Scriberr CLI. This script will automatically detect your OS and architecture.
+                            Run this command in your terminal to install the Wata Meeting Notes CLI. This script will automatically detect your OS and architecture.
                         </p>
 
                         <div className="relative">

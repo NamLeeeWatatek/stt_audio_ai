@@ -1,6 +1,6 @@
 {
     "extensionName": {
-        "message": "Meeting Insight - Scriberr AI"
+        "message": "Wata Meeting Notes"
     },
     "extensionDescription": {
         "message": "Ghi âm cuộc họp chuyên nghiệp theo thời gian thực (Phiên bản 2026 - Ghi tab)."
@@ -9,7 +9,7 @@
         "message": "Chọn nguồn và bắt đầu phiên âm..."
     },
     "headerTitle": {
-        "message": "Meeting Insight"
+        "message": "Wata Meeting Notes"
     },
     "sectionAudioSource": {
         "message": "1. Chọn Nguồn Âm Thanh"

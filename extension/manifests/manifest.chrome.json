@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Meeting Insight - Scriberr AI",
+    "name": "Wata Meeting Notes",
     "version": "2.0",
-    "description": "Professional real-time meeting transcription with Clean Architecture (2026 Edition).",
+    "description": "Professional real-time meeting transcription (2026 Edition).",
     "default_locale": "en",
     "permissions": [
         "tabCapture",

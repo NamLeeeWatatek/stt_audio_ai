@@ -117,7 +117,7 @@ export function SummaryDialog({ audioId, isOpen, onClose, llmReady }: SummaryDia
     };
 
     if (showOutput) {
-        // Output View - Redesigned with Scriberr Design System
+        // Output View - Redesigned with Wata Design System
         return (
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
                 <DialogContent className="w-[calc(100%-2rem)] max-w-4xl mx-auto bg-[var(--bg-card)] dark:bg-[#0A0A0A] border border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_4px_rgba(0,0,0,0.3),0_24px_48px_rgba(0,0,0,0.3)] p-0 rounded-2xl max-h-[85vh] overflow-hidden">
@@ -230,7 +230,7 @@ export function SummaryDialog({ audioId, isOpen, onClose, llmReady }: SummaryDia
         );
     }
 
-    // Template Selector View - Redesigned with Scriberr Design System
+    // Template Selector View - Redesigned with Wata Design System
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent

@@ -207,6 +207,15 @@ func SetupRoutes(handler *Handler, authService *auth.AuthService) *gin.Engine {
 			{
 				queue.GET("/stats", handler.GetQueueStats)
 			}
+
+			// User management (Admin ONLY)
+			users := admin.Group("/users")
+			users.Use(middleware.AdminMiddleware(authService))
+			{
+				users.GET("/", handler.ListUsers)
+				users.PUT("/:id/role", handler.UpdateUserRole)
+				users.DELETE("/:id", handler.DeleteUser)
+			}
 		}
 
 		// LLM configuration routes (require authentication)

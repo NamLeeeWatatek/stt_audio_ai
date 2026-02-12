@@ -7,6 +7,7 @@ const AudioDetailView = lazy(() => import("@/features/transcription/components/A
 const Settings = lazy(() => import('@/features/settings/pages/SettingsPage').then(module => ({ default: module.Settings })))
 const CLISettings = lazy(() => import('@/features/settings/pages/CLISettingsPage').then(module => ({ default: module.CLISettings })))
 const CLIAuthConfirmation = lazy(() => import('./features/auth/components/CLIAuthConfirmation').then(module => ({ default: module.CLIAuthConfirmation })))
+const UserManagement = lazy(() => import('@/features/auth/components/UserManagement').then(module => ({ default: module.UserManagement })))
 
 
 // Loading component
@@ -25,6 +26,7 @@ function App() {
 
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/cli" element={<CLISettings />} />
+        <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/auth/cli/authorize" element={<CLIAuthConfirmation />} />
 
         {/* Fallback */}

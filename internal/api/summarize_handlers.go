@@ -42,6 +42,10 @@ func (h *Handler) Summarize(c *gin.Context) {
 		return
 	}
 
+	if _, err := h.checkJobOwnership(c, req.TranscriptionID); err != nil {
+		return
+	}
+
 	svc, provider, err := h.getLLMService(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -203,6 +207,11 @@ func (h *Handler) GetSummaryForTranscription(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Transcription ID required"})
 		return
 	}
+
+	if _, err := h.checkJobOwnership(c, tid); err != nil {
+		return
+	}
+
 	s, err := h.summaryRepo.GetLatestSummary(c.Request.Context(), tid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

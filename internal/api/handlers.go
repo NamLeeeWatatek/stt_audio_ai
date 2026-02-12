@@ -121,6 +121,7 @@ type LoginResponse struct {
 		Username  string `json:"username"`
 		FullName  string `json:"full_name"`
 		AvatarURL string `json:"avatar_url"`
+		Role      string `json:"role"`
 	} `json:"user"`
 }
 
@@ -133,8 +134,9 @@ type RegisterRequest struct {
 
 // RegistrationStatusResponse represents the registration status
 type RegistrationStatusResponse struct {
-	// Match tests expecting snake_case key
-	RegistrationEnabled bool `json:"registration_enabled"`
+	RegistrationEnabled  bool `json:"registration_enabled"` // Legacy field for compatibility
+	RegistrationAllowed  bool `json:"registration_allowed"`
+	RegistrationRequired bool `json:"registration_required"`
 }
 
 // ChangePasswordRequest represents the change password request
@@ -489,6 +491,14 @@ func (h *Handler) UploadVideo(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Security BearerAuth
 func (h *Handler) UploadMultiTrack(c *gin.Context) {
+	// Get user ID from context
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userID := userIDVal.(uint)
+
 	// Parse multipart form
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -541,6 +551,7 @@ func (h *Handler) UploadMultiTrack(c *gin.Context) {
 		Status:          models.StatusUploaded,
 		IsMultiTrack:    true,
 		MultiTrackFiles: trackFiles,
+		UserID:          &userID,
 	}
 
 	if title := c.PostForm(paramTitle); title != "" {
@@ -571,6 +582,10 @@ func (h *Handler) UploadMultiTrack(c *gin.Context) {
 func (h *Handler) GetMergeStatus(c *gin.Context) {
 	jobID := c.Param("id")
 
+	if _, err := h.checkJobOwnership(c, jobID); err != nil {
+		return
+	}
+
 	status, errorMsg, err := h.multiTrackProcessor.GetMergeStatus(jobID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
@@ -600,6 +615,10 @@ func (h *Handler) GetMergeStatus(c *gin.Context) {
 // @Security BearerAuth
 func (h *Handler) GetTrackProgress(c *gin.Context) {
 	jobID := c.Param("id")
+
+	if _, err := h.checkJobOwnership(c, jobID); err != nil {
+		return
+	}
 
 	// Get the main job details using repository
 	job, err := h.jobRepo.FindWithAssociations(c.Request.Context(), jobID)
@@ -707,6 +726,14 @@ func (h *Handler) GetTrackProgress(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Security BearerAuth
 func (h *Handler) SubmitJob(c *gin.Context) {
+	// Get user ID from context
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userID := userIDVal.(uint)
+
 	// Parse multipart form
 	header, err := c.FormFile(paramAudio)
 	if err != nil {
@@ -779,6 +806,7 @@ func (h *Handler) SubmitJob(c *gin.Context) {
 		Status:      models.StatusPending,
 		Diarization: diarize,
 		Parameters:  params,
+		UserID:      &userID,
 	}
 
 	if title := c.PostForm(paramTitle); title != "" {
@@ -814,13 +842,8 @@ func (h *Handler) SubmitJob(c *gin.Context) {
 func (h *Handler) GetJobStatus(c *gin.Context) {
 	jobID := c.Param("id")
 
-	job, err := h.taskQueue.GetJobStatus(jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job status"})
 		return
 	}
 
@@ -841,13 +864,8 @@ func (h *Handler) GetJobStatus(c *gin.Context) {
 func (h *Handler) GetTranscript(c *gin.Context) {
 	jobID := c.Param("id")
 
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		return
 	}
 
@@ -931,7 +949,14 @@ func (h *Handler) ListTranscriptionJobs(c *gin.Context) {
 		}
 	}
 
-	jobs, total, err := h.jobRepo.ListWithParams(c.Request.Context(), offset, limit, sortBy, sortOrder, searchQuery, updatedAfter)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userID := userIDVal.(uint)
+
+	jobs, total, err := h.jobRepo.ListWithParams(c.Request.Context(), userID, offset, limit, sortBy, sortOrder, searchQuery, updatedAfter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list jobs"})
 		return
@@ -961,9 +986,8 @@ func (h *Handler) ListTranscriptionJobs(c *gin.Context) {
 func (h *Handler) GetTranscriptionJob(c *gin.Context) {
 	id := c.Param("id")
 
-	job, err := h.jobRepo.FindWithAssociations(c.Request.Context(), id)
+	job, err := h.checkJobOwnership(c, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
 		return
 	}
 
@@ -1037,13 +1061,8 @@ func (h *Handler) StartTranscription(c *gin.Context) {
 }
 
 func (h *Handler) getJobForTranscription(c *gin.Context, jobID string) (*models.TranscriptionJob, error) {
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return nil, err
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		return nil, err
 	}
 
@@ -1052,6 +1071,35 @@ func (h *Handler) getJobForTranscription(c *gin.Context, jobID string) (*models.
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot start transcription: job is currently processing or pending"})
 		return nil, fmt.Errorf("invalid job status")
 	}
+	return job, nil
+}
+
+func (h *Handler) checkJobOwnership(c *gin.Context, jobID string) (*models.TranscriptionJob, error) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return nil, fmt.Errorf("authentication required")
+	}
+	userID := userIDVal.(uint)
+
+	roleVal, exists := c.Get("role")
+	role := ""
+	if exists {
+		role = roleVal.(string)
+	}
+
+	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+		return nil, err
+	}
+
+	// ENFORCE DATA ISOLATION: User must own the job OR be an admin
+	if role != "admin" && job.UserID != nil && *job.UserID != userID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+		return nil, fmt.Errorf("access denied")
+	}
+
 	return job, nil
 }
 
@@ -1160,13 +1208,8 @@ func (h *Handler) getValidatedTranscriptionParams(c *gin.Context, job *models.Tr
 func (h *Handler) KillJob(c *gin.Context) {
 	jobID := c.Param("id")
 
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		return
 	}
 
@@ -1215,9 +1258,8 @@ func (h *Handler) UpdateTranscriptionTitle(c *gin.Context) {
 		return
 	}
 
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
 		return
 	}
 
@@ -1250,9 +1292,8 @@ func (h *Handler) UpdateTranscriptionTitle(c *gin.Context) {
 func (h *Handler) DeleteTranscriptionJob(c *gin.Context) {
 	jobID := c.Param("id")
 
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
 		return
 	}
 
@@ -1339,14 +1380,9 @@ func (h *Handler) DeleteTranscriptionJob(c *gin.Context) {
 func (h *Handler) GetJobExecutionData(c *gin.Context) {
 	jobID := c.Param("id")
 
-	// Get the transcription job to check if it's multi-track
-	job, err := h.jobRepo.FindWithAssociations(c.Request.Context(), jobID)
+	// Verify ownership and get job
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Transcription job not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get transcription job"})
 		return
 	}
 
@@ -1413,13 +1449,8 @@ func (h *Handler) GetJobExecutionData(c *gin.Context) {
 func (h *Handler) GetAudioFile(c *gin.Context) {
 	jobID := c.Param("id")
 
-	job, err := h.jobRepo.FindByID(c.Request.Context(), jobID)
+	job, err := h.checkJobOwnership(c, jobID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		return
 	}
 
@@ -1581,6 +1612,7 @@ func (h *Handler) Login(c *gin.Context) {
 	response.User.Username = user.Username
 	response.User.FullName = user.FullName
 	response.User.AvatarURL = user.AvatarURL
+	response.User.Role = user.Role
 
 	logger.AuthEvent("login", req.Username, c.ClientIP(), true)
 	c.JSON(http.StatusOK, response)
@@ -1651,6 +1683,7 @@ func (h *Handler) GetMe(c *gin.Context) {
 			"username":   user.Username,
 			"full_name":  user.FullName,
 			"avatar_url": user.AvatarURL,
+			"role":       user.Role,
 		},
 	})
 }
@@ -1668,12 +1701,96 @@ func (h *Handler) GetRegistrationStatus(c *gin.Context) {
 		return
 	}
 
+	required := userCount == 0
+	allowed := required || h.config.AllowRegistration
+
 	response := RegistrationStatusResponse{
-		RegistrationEnabled: userCount == 0,
+		RegistrationEnabled:  allowed,
+		RegistrationAllowed:  allowed,
+		RegistrationRequired: required,
 	}
 
 	c.JSON(http.StatusOK, response)
 }
+
+// --- Admin User Management ---
+
+// @Summary List all users
+// @Description Get a list of all registered users (Admin only)
+// @Tags admin
+// @Produce json
+// @Success 200 {array} models.User
+// @Router /api/v1/admin/users [get]
+func (h *Handler) ListUsers(c *gin.Context) {
+	users, _, err := h.userRepo.List(c.Request.Context(), 0, 1000)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list users"})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+// @Summary Update user role
+// @Description Update the role of a user (Admin only)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param id path uint true "User ID"
+// @Param body body map[string]string true "Role update (e.g. {'role': 'admin'})"
+// @Success 200 {object} map[string]string
+// @Router /api/v1/admin/users/{id}/role [put]
+func (h *Handler) UpdateUserRole(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	var req struct {
+		Role string `json:"role" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	user, err := h.userRepo.FindByID(c.Request.Context(), uint(id))
+	if err != nil || user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	user.Role = req.Role
+	if err := h.userRepo.Update(c.Request.Context(), user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User role updated successfully"})
+}
+
+// @Summary Delete a user
+// @Description Delete a user account (Admin only)
+// @Tags admin
+// @Param id path uint true "User ID"
+// @Success 200 {object} map[string]string
+// @Router /api/v1/admin/users/{id} [delete]
+func (h *Handler) DeleteUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+	
+	// Prevent deleting yourself
+	currentUserID := c.GetUint("user_id")
+	if uint(id) == currentUserID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot delete your own account"})
+		return
+	}
+
+	if err := h.userRepo.Delete(c.Request.Context(), uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
 
 // @Summary Register initial admin user
 // @Description Register the initial admin user (only allowed when no users exist)
@@ -1693,7 +1810,8 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	if userCount > 0 {
+	// If at least one user exists and multi-user registration is not allowed
+	if userCount > 0 && !h.config.AllowRegistration {
 		c.JSON(http.StatusConflict, gin.H{"error": "Registration is not allowed. Admin user already exists"})
 		return
 	}
@@ -1718,9 +1836,15 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	// Create user
+	role := "user"
+	if userCount == 0 {
+		role = "admin"
+	}
+
 	user := models.User{
 		Username: req.Username,
 		Password: hashedPassword,
+		Role:     role,
 	}
 
 	if err := h.userRepo.Create(c.Request.Context(), &user); err != nil {
@@ -1746,6 +1870,7 @@ func (h *Handler) Register(c *gin.Context) {
 	response := LoginResponse{Token: token}
 	response.User.ID = user.ID
 	response.User.Username = user.Username
+	response.User.Role = user.Role
 
 	c.JSON(http.StatusCreated, response)
 }
@@ -2471,6 +2596,14 @@ type QuickTranscriptionRequest struct {
 // @Security ApiKeyAuth
 // @Security BearerAuth
 func (h *Handler) SubmitQuickTranscription(c *gin.Context) {
+	// Get user ID from context
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userID := userIDVal.(uint)
+
 	fmt.Println("!!! [BACKEND] API REACHED: SubmitQuickTranscription")
 	// Parse multipart form
 	file, header, err := c.Request.FormFile("audio")
@@ -2533,16 +2666,8 @@ func (h *Handler) SubmitQuickTranscription(c *gin.Context) {
 
 	title := c.PostForm("title")
 	
-	// Get optional userID for job ownership
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = new(uint)
-		*userID = id
-	}
-	
 	// Submit quick transcription job
-	job, err := h.quickTranscription.SubmitQuickJob(file, header.Filename, params, title, sessionID, saveToPortal, true, userID)
+	job, err := h.quickTranscription.SubmitQuickJob(file, header.Filename, params, title, sessionID, saveToPortal, true, &userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to submit quick transcription: %v", err)})
 		return
@@ -2565,6 +2690,10 @@ func (h *Handler) SubmitQuickTranscription(c *gin.Context) {
 func (h *Handler) GetQuickTranscriptionStatus(c *gin.Context) {
 	jobID := c.Param("id")
 
+	if _, err := h.checkJobOwnership(c, jobID); err != nil {
+		return
+	}
+
 	job, err := h.quickTranscription.GetQuickJob(jobID)
 	if err != nil {
 		if err.Error() == "job not found" || err.Error() == "job expired" {
@@ -2582,6 +2711,10 @@ func (h *Handler) GetQuickTranscriptionStatus(c *gin.Context) {
 func (h *Handler) FinalizeQuickTranscription(c *gin.Context) {
 	jobID := c.Param("id")
 	fmt.Printf(">>> API: Received finalize request for job %s\n", jobID)
+
+	if _, err := h.checkJobOwnership(c, jobID); err != nil {
+		return
+	}
 	
 	// Use a background context for the actual work so it doesn't get cancelled if the user closes the popup
 	bgCtx := context.Background()
@@ -2629,6 +2762,14 @@ func (h *Handler) FinalizeQuickTranscription(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Security BearerAuth
 func (h *Handler) DownloadFromYouTube(c *gin.Context) {
+	// Get user ID from context
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userID := userIDVal.(uint)
+
 	var req YouTubeDownloadRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -2734,6 +2875,7 @@ func (h *Handler) DownloadFromYouTube(c *gin.Context) {
 		ID:        jobID,
 		AudioPath: actualFilePath,
 		Status:    models.StatusUploaded,
+		UserID:    &userID,
 	}
 
 	// Set title

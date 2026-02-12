@@ -150,6 +150,7 @@ type User struct {
 	Password                 string    `json:"-" gorm:"not null;type:varchar(255)"`
 	FullName                 string    `json:"full_name" gorm:"type:varchar(100)"`
 	AvatarURL                string    `json:"avatar_url" gorm:"type:text"`
+	Role                     string    `json:"role" gorm:"not null;default:'user';type:varchar(20)"`
 	DefaultProfileID         *string   `json:"default_profile_id,omitempty" gorm:"type:varchar(36)"`
 	AutoTranscriptionEnabled bool      `json:"auto_transcription_enabled" gorm:"not null;default:false"`
 	CreatedAt                time.Time `json:"created_at" gorm:"autoCreateTime"`

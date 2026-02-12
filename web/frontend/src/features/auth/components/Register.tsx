@@ -10,6 +10,7 @@ import { Eye, EyeOff, Check, X } from "lucide-react";
 
 interface RegisterProps {
 	onRegister: (token: string) => void;
+	onSwitchToLogin?: () => void;
 }
 
 interface PasswordStrength {
@@ -20,7 +21,7 @@ interface PasswordStrength {
 	hasSpecialChar: boolean;
 }
 
-export function Register({ onRegister }: RegisterProps) {
+export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
 	const navigate = useNavigate();
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -106,18 +107,20 @@ export function Register({ onRegister }: RegisterProps) {
 						<ScriberrLogo onClick={() => navigate('/')} />
 					</div>
 					<h2 className="text-3xl font-bold text-carbon-900 dark:text-carbon-100">
-						Welcome to Scriberr
+						Welcome to Wata Meeting Notes
 					</h2>
 					<p className="mt-2 text-carbon-600 dark:text-carbon-400">
-						Create your admin account to get started
+						{onSwitchToLogin ? "Create your account to get started" : "Create your admin account to get started"}
 					</p>
 				</div>
 
 				<Card className="bg-white dark:bg-carbon-800 border-carbon-200 dark:border-carbon-700">
 					<CardHeader>
-						<CardTitle className="text-carbon-900 dark:text-carbon-100">Setup Admin Account</CardTitle>
+						<CardTitle className="text-carbon-900 dark:text-carbon-100">
+							{onSwitchToLogin ? "Create Account" : "Setup Admin Account"}
+						</CardTitle>
 						<CardDescription className="text-carbon-600 dark:text-carbon-400">
-							This will be the only account that can access this Scriberr instance
+							{onSwitchToLogin ? "Enter your details to create a new account" : "This will be the only account that can access this Wata Meeting Notes instance"}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -228,15 +231,27 @@ export function Register({ onRegister }: RegisterProps) {
 								className="w-full"
 								disabled={loading || !username.trim() || !isPasswordValid || !passwordsMatch}
 							>
-								{loading ? "Creating Account..." : "Create Admin Account"}
+								{loading ? "Creating Account..." : (onSwitchToLogin ? "Create Account" : "Create Admin Account")}
 							</Button>
 						</form>
+
+						{onSwitchToLogin && (
+							<div className="mt-4 text-center text-sm">
+								<span className="text-carbon-600 dark:text-carbon-400">Already have an account? </span>
+								<button
+									onClick={onSwitchToLogin}
+									className="text-blue-600 dark:text-blue-400 font-medium hover:underline focus:outline-none"
+								>
+									Sign in
+								</button>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
 				<div className="text-center">
 					<p className="text-sm text-carbon-600 dark:text-carbon-400">
-						This account will have full administrative access to your Scriberr instance
+						This account will have full administrative access to your Wata Meeting Notes instance
 					</p>
 				</div>
 			</div>

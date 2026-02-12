@@ -506,7 +506,7 @@ export const ChatInterface = memo(function ChatInterface({ transcriptionId, acti
               {(messages || []).map(message => (
                 <div key={message.id} className="group w-full">
                   {message.role === "user" ? (
-                    /* User Message - Scriberr Design System */
+                    /* User Message - Wata Design System */
                     <div className="flex justify-end">
                       <div className="flex w-full px-2 mx-auto">
                         <div className="w-full flex justify-end">
@@ -538,7 +538,7 @@ export const ChatInterface = memo(function ChatInterface({ transcriptionId, acti
                       </div>
                     </div>
                   ) : (
-                    /* Assistant Message - Scriberr Design System */
+                    /* Assistant Message - Wata Design System */
                     <div className="flex justify-start">
                       <div className="flex w-full px-2 mx-auto">
                         <div className="w-full flex justify-start">

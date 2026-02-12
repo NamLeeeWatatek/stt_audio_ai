@@ -53,7 +53,7 @@ type JobRepository interface {
 	FindWithAssociations(ctx context.Context, id string) (*models.TranscriptionJob, error)
 	FindActiveTrackJobs(ctx context.Context, parentJobID string) ([]models.TranscriptionJob, error)
 	FindLatestCompletedExecution(ctx context.Context, jobID string) (*models.TranscriptionJobExecution, error)
-	ListWithParams(ctx context.Context, offset, limit int, sortBy, sortOrder, searchQuery string, updatedAfter *time.Time) ([]models.TranscriptionJob, int64, error)
+	ListWithParams(ctx context.Context, userID uint, offset, limit int, sortBy, sortOrder, searchQuery string, updatedAfter *time.Time) ([]models.TranscriptionJob, int64, error)
 	ListByUser(ctx context.Context, userID uint, offset, limit int) ([]models.TranscriptionJob, int64, error)
 	UpdateTranscript(ctx context.Context, jobID string, transcript string) error
 	CreateExecution(ctx context.Context, execution *models.TranscriptionJobExecution) error
@@ -94,11 +94,11 @@ func (r *jobRepository) FindWithAssociations(ctx context.Context, id string) (*m
 	return &job, nil
 }
 
-func (r *jobRepository) ListWithParams(ctx context.Context, offset, limit int, sortBy, sortOrder, searchQuery string, updatedAfter *time.Time) ([]models.TranscriptionJob, int64, error) {
+func (r *jobRepository) ListWithParams(ctx context.Context, userID uint, offset, limit int, sortBy, sortOrder, searchQuery string, updatedAfter *time.Time) ([]models.TranscriptionJob, int64, error) {
 	var jobs []models.TranscriptionJob
 	var count int64
 
-	db := r.db.WithContext(ctx).Model(&models.TranscriptionJob{})
+	db := r.db.WithContext(ctx).Model(&models.TranscriptionJob{}).Where("user_id = ?", userID)
 
 	// Handle delta sync if updatedAfter provided
 	if updatedAfter != nil {
@@ -140,12 +140,7 @@ func (r *jobRepository) ListWithParams(ctx context.Context, offset, limit int, s
 }
 
 func (r *jobRepository) ListByUser(ctx context.Context, userID uint, offset, limit int) ([]models.TranscriptionJob, int64, error) {
-	// Note: Currently TranscriptionJob doesn't have a UserID field in the provided model.
-	// Assuming we might need to add it or this is a placeholder for future multi-user support.
-	// For now, we'll just return all jobs as the current app seems single-user focused or
-	// missing the link.
-	// TODO: Add UserID to TranscriptionJob model if multi-user isolation is required.
-	return r.List(ctx, offset, limit)
+	return r.ListWithParams(ctx, userID, offset, limit, "", "", "", nil)
 }
 
 func (r *jobRepository) UpdateTranscript(ctx context.Context, jobID string, transcript string) error {

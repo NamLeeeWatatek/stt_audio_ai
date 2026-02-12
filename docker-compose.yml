@@ -13,6 +13,7 @@ services:
       - LOW_MEMORY_MODE=true
       - ENABLED_MODELS=groq_whisper,fpt_ai,openai_whisper
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       # - PYTORCH_CUDA_VERSION=cpu
       # CORS: comma-separated list of allowed origins for production
       # - ALLOWED_ORIGINS=https://your-domain.com

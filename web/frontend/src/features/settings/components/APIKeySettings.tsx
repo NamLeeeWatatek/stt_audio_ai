@@ -47,7 +47,7 @@ export function APIKeySettings() {
 							API Keys
 						</h3>
 						<p className="text-sm text-[var(--text-secondary)] mt-1">
-							Manage your API keys for external access to Scriberr.
+							Manage your API keys for external access to Wata Meeting Notes.
 						</p>
 					</div>
 					<Button

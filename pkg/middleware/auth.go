@@ -60,6 +60,7 @@ func AuthMiddleware(authService *auth.AuthService) gin.HandlerFunc {
 		c.Set("auth_type", "jwt")
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
@@ -130,6 +131,46 @@ func JWTOnlyMiddleware(authService *auth.AuthService) gin.HandlerFunc {
 		c.Set("auth_type", "jwt")
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
+		c.Next()
+	}
+}
+
+// AdminMiddleware strictly limits access to admin users only
+func AdminMiddleware(authService *auth.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Admin middleware MUST follow a JWT middleware to have user context
+		userIDVal, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+			c.Abort()
+			return
+		}
+
+		roleVal, exists := c.Get("role")
+		if !exists {
+			// Fallback: Check DB if role missing (e.g. from API key or legacy)
+			var user models.User
+			if err := database.DB.First(&user, userIDVal.(uint)).Error; err != nil {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+				c.Abort()
+				return
+			}
+			if user.Role != "admin" {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Admin privileges required"})
+				c.Abort()
+				return
+			}
+			c.Next()
+			return
+		}
+
+		if roleVal.(string) != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Admin privileges required"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

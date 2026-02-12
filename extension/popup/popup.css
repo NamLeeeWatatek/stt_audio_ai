@@ -4,12 +4,12 @@
   --card-active: #2a2e45;
   --card-hover: rgba(42, 46, 69, 0.5);
   --input-bg: rgba(255, 255, 255, 0.05);
-  --primary-blue: #4F6EF7;
+  --primary-blue: #FFAB40;
   --danger-red: #f43f5e;
   --text-main: #ffffff;
   --text-dim: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.1);
-  --visualizer-color: #4F6EF7;
+  --visualizer-color: #FFAB40;
 }
 
 * {
@@ -196,7 +196,7 @@ header {
 }
 
 .primary-btn {
-  background: var(--primary-blue);
+  background: linear-gradient(135deg, #FFAB40 0%, #FF3D00 100%);
   color: white;
   border: none;
   width: 100%;
@@ -205,16 +205,18 @@ header {
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(255, 61, 0, 0.3);
 }
 
 .primary-btn:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 61, 0, 0.4);
 }
 
 .primary-btn.recording {

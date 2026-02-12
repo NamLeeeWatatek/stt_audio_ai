@@ -1,5 +1,5 @@
 /**
- * SCRIBERR CONTENT UI - VERSION 3.5
+ * WATA CONTENT UI - VERSION 1.0
  */
 
 export class MeetUI {
@@ -15,7 +15,7 @@ export class MeetUI {
     init() {
         // Tạo container ẩn để không bị ảnh hưởng bởi CSS của Meet
         this.container = document.createElement('div');
-        this.container.id = 'scriberr-ui-root';
+        this.container.id = 'wata-ui-root';
         this.container.style.cssText = 'all: initial;';
         document.body.appendChild(this.container);
 
@@ -29,62 +29,63 @@ export class MeetUI {
     injectGlobalStyles() {
         const style = document.createElement('style');
         style.textContent = `
-            .scriberr-toolbar-button {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 40px;
-                height: 40px;
-                background: rgba(60, 64, 67, 0.6);
-                border-radius: 50%;
-                cursor: pointer;
-                margin-right: 12px;
-                margin-left: 8px;
-                transition: all 0.2s;
-                border: none;
-                padding: 0;
-                vertical-align: middle;
-                flex-shrink: 0;
-                position: relative;
-                z-index: 2147483647 !important;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            #scriberr-toolbar-btn {
+                position: fixed !important;
+                bottom: 100px !important;
+                left: 20px !important;
+                width: 52px !important;
+                height: 52px !important;
+                background: linear-gradient(135deg, #FFAB40 0%, #FF3D00 100%) !important;
+                border: 2px solid rgba(255,255,255,0.2) !important;
+                border-radius: 16px !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                z-index: 9999999 !important;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             }
-            .scriberr-toolbar-button:hover {
-                background: rgba(95, 99, 104, 0.8);
-                transform: scale(1.05);
-                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            #scriberr-toolbar-btn:hover {
+                transform: scale(1.1) translateY(-5px) !important;
+                box-shadow: 0 12px 40px rgba(255, 171, 64, 0.5) !important;
+                background: linear-gradient(135deg, #FFB74D 0%, #FF6D00 100%) !important;
             }
-            .scriberr-toolbar-button img {
-                width: 24px;
-                height: 24px;
-                border-radius: 4px;
+            #scriberr-toolbar-btn:active {
+                transform: scale(0.9) !important;
             }
-            .scriberr-toolbar-button.recording {
-                background: rgba(244, 63, 94, 0.2);
-                border: 1px solid #f43f5e;
-                animation: scriberr-pulse-border 1.5s infinite;
+            #scriberr-toolbar-btn img {
+                width: 32px !important;
+                height: 32px !important;
+                pointer-events: none !important;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)) !important;
             }
-            
-            @keyframes scriberr-pulse-border {
-                0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
-                70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+            #scriberr-toolbar-btn.recording {
+                background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+                animation: scriberr-fab-pulse 2s infinite !important;
+            }
+            @keyframes scriberr-fab-pulse {
+                0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+                70% { box-shadow: 0 0 0 15px rgba(244, 63, 94, 0); }
                 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
             }
-
+            
             #scriberr-side-panel {
                 position: fixed;
                 top: 0;
                 right: -350px;
-                width: 320px;
+                width: 340px;
                 height: 100vh;
-                background: #121420;
+                background: rgba(18, 20, 32, 0.95);
+                backdrop-filter: blur(10px);
                 color: white;
                 z-index: 1000000;
-                box-shadow: -5px 0 25px rgba(0,0,0,0.5);
-                transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: -10px 0 40px rgba(0,0,0,0.6);
+                transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
                 display: flex;
                 flex-direction: column;
-                font-family: 'Inter', sans-serif;
+                font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                border-left: 1px solid rgba(255,255,255,0.05);
             }
             #scriberr-side-panel.open {
                 right: 0;
@@ -109,64 +110,58 @@ export class MeetUI {
                 border-bottom: 1px solid rgba(255,255,255,0.05);
             }
             .scriberr-guide-box {
-                background: rgba(79, 110, 247, 0.1);
-                border: 1px dashed #4F6EF7;
-                padding: 15px;
-                border-radius: 8px;
+                background: rgba(255, 171, 64, 0.08);
+                border: 1px solid rgba(255, 171, 64, 0.3);
+                padding: 18px;
+                border-radius: 12px;
                 margin-top: 10px;
-                font-size: 12px;
-                color: #94a3b8;
+                font-size: 13px;
+                color: #cbd5e1;
+                line-height: 1.5;
             }
         `;
         document.head.appendChild(style);
     }
 
     startObserveToolbar() {
-        // Selector cho nút Mic của Google Meet (thường có data-is-muted)
-        const micSelector = '[data-is-muted]';
-
+        // Không cần observe toolbar nữa, ta chèn trực tiếp vào body như một FAB
         const inject = () => {
             if (document.getElementById('scriberr-toolbar-btn')) return;
-
-            const micNode = document.querySelector(micSelector);
-            if (micNode) {
-                // Find nearest button-like container
-                let targetWrapper = micNode.closest('button') || micNode.closest('[role="button"]');
-
-                // Fallback using class name if closest fails
-                if (!targetWrapper) {
-                    targetWrapper = micNode.closest('.VfPpkd-Bz112c-LgbsSe');
-                }
-
-                if (targetWrapper && targetWrapper.parentElement) {
-                    // Cấu trúc Meet: div(container) > div(wrapper) > button
-                    // Ta muốn chèn vào trước wrapper của nút Mic để nó nằm ngang hàng bên trái
-                    const insertionPoint = targetWrapper;
-
-                    this.createToolbarButton();
-                    insertionPoint.parentElement.insertBefore(this.dot, insertionPoint);
-                    console.log('✅ [Scriberr] Button injected before Microphone');
-                }
-            }
+            this.createToolbarButton();
+            document.body.appendChild(this.dot);
+            console.log('✅ [Wata] FAB Injected at bottom left');
         };
 
-        inject();
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            inject();
+        } else {
+            window.addEventListener('DOMContentLoaded', inject);
+        }
 
-        this.observer = new MutationObserver(inject);
-        this.observer.observe(document.body, { childList: true, subtree: true });
+        // Backup nếu Meet render trễ
+        setTimeout(inject, 2000);
+        setTimeout(inject, 5000);
     }
 
     createToolbarButton() {
         this.dot = document.createElement('button');
         this.dot.id = 'scriberr-toolbar-btn';
-        this.dot.className = 'scriberr-toolbar-button';
-        this.dot.title = 'Scriberr AI Helper';
+        this.dot.title = 'Wata Meeting Notes Assistant';
 
-        const iconUrl = chrome.runtime.getURL('assets/icons/icon48.png');
-        this.dot.innerHTML = `<img src="${iconUrl}" alt="S">`;
+        const iconUrl = chrome.runtime.getURL('assets/icons/icon128.png');
+
+        const img = document.createElement('img');
+        img.src = iconUrl;
+        img.onerror = () => {
+            img.style.display = 'none';
+            this.dot.innerHTML = '<span style="color:white; font-weight:900; font-size:24px;">S</span>';
+        };
+
+        this.dot.appendChild(img);
 
         this.dot.onclick = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.togglePanel();
         };
     }
@@ -176,7 +171,7 @@ export class MeetUI {
         this.panel.id = 'scriberr-side-panel';
         this.panel.innerHTML = `
             <div class="scriberr-panel-header">
-                <span style="font-weight: 700;">Scriberr AI Guide</span>
+                <span style="font-weight: 700;">Wata Meeting Notes Guide</span>
                 <button id="scriberr-close-panel" style="background:none; border:none; color: #94a3b8; cursor:pointer;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -188,7 +183,7 @@ export class MeetUI {
                 <div class="scriberr-guide-box">
                     <p style="color: white; font-weight: 600; margin-bottom: 8px;">🚀 Hướng dẫn khởi động:</p>
                     <ol style="padding-left: 15px; display: flex; flex-direction: column; gap: 8px;">
-                        <li>Nhấp vào biểu tượng <b>Scriberr</b> trên thanh công cụ của trình duyệt (góc trên bên phải).</li>
+                        <li>Nhấp vào biểu tượng <b>Wata</b> trên thanh công cụ của trình duyệt (góc trên bên phải).</li>
                         <li>Đặt tên cuộc họp và nhấn <b>"Connect Audio Source"</b>.</li>
                         <li>Nội dung sẽ tự động xuất hiện tại đây sau khi bắt đầu.</li>
                         <li style="color: #fbbf24; font-size: 11px;">💡 Lưu ý: Khi chọn màn hình/cửa sổ, hãy nhớ tích vào ô <b>"Share audio"</b> để bắt được tiếng người khác.</li>

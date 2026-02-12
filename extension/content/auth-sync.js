@@ -12,29 +12,29 @@ function syncToken() {
             const user = parsed.state?.user || parsed.user;
 
             if (token && token !== lastSyncedToken) {
-                console.log('🔑 [Scriberr] New token detected, syncing...');
+                console.log('🔑 [Wata] New token detected, syncing...');
                 chrome.runtime.sendMessage({
                     type: 'AUTH_SYNC_TOKEN',
                     token: token,
                     user: user
                 }, (response) => {
                     if (chrome.runtime.lastError) {
-                        console.error('❌ [Scriberr] Runtime error:', chrome.runtime.lastError);
+                        console.error('❌ [Wata] Runtime error:', chrome.runtime.lastError);
                     } else {
-                        console.log('✅ [Scriberr] Token synced successfully');
+                        console.log('✅ [Wata] Token synced successfully');
                         lastSyncedToken = token;
 
                         // Stop polling if we found a valid token
                         if (pollInterval) {
                             clearInterval(pollInterval);
                             pollInterval = null;
-                            console.log('🛑 [Scriberr] Polling stopped (token synced).');
+                            console.log('🛑 [Wata] Polling stopped (token synced).');
                         }
                     }
                 });
             }
         } catch (e) {
-            console.error('❌ [Scriberr] Sync parse failed:', e);
+            console.error('❌ [Wata] Sync parse failed:', e);
         }
     }
 }
@@ -51,7 +51,7 @@ let pollInterval = setInterval(() => {
         if (pollInterval) {
             clearInterval(pollInterval);
             pollInterval = null;
-            console.log('🛑 [Scriberr] Polling stopped (timeout).');
+            console.log('🛑 [Wata] Polling stopped (timeout).');
         }
     }
 }, 2000); // 2 seconds interval
